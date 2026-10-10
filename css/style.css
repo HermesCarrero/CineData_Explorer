@@ -2,6 +2,397 @@
   margin: 0;
 }
 
+:root,
+:root[data-theme="claro"] {
+  --bg: #f7f7f5;
+  --sf: #ffffff;
+  --tx: #1d1d1f;
+  --mt: #6b6b6b;
+  --bd: #e2e2de;
+  --ac: #2f6fed;
+  --on: #ffffff;
+  --c1: #2f6fed;
+  --c2: #7aa7f5;
+  --c3: #bcd2fa;
+  --overlay: rgba(0, 0, 0, 0.45);
+}
+
+:root[data-theme="oscuro"] {
+  --bg: #14161a;
+  --sf: #1e2127;
+  --tx: #eceef1;
+  --mt: #9aa1ac;
+  --bd: #2d323b;
+  --ac: #5b9dff;
+  --on: #0b1220;
+  --c1: #5b9dff;
+  --c2: #3d6fb8;
+  --c3: #2a4670;
+}
+
+:root[data-theme="cine"] {
+  --bg: #1a1214;
+  --sf: #26191c;
+  --tx: #f5ece6;
+  --mt: #b39a94;
+  --bd: #3a272b;
+  --ac: #e0b04a;
+  --on: #1a1214;
+  --c1: #e0b04a;
+  --c2: #b8434f;
+  --c3: #6e2a33;
+}
+
+:root[data-theme="oceano"] {
+  --bg: #eef6f6;
+  --sf: #ffffff;
+  --tx: #0f2a2e;
+  --mt: #51727a;
+  --bd: #d3e4e5;
+  --ac: #0b7a7a;
+  --on: #ffffff;
+  --c1: #0b7a7a;
+  --c2: #5fc0b8;
+  --c3: #b4e3de;
+}
+
+:root[data-theme="bosque"] {
+  --bg: #435b49;
+  --sf: #4d6753;
+  --tx: #f1f5ec;
+  --mt: #d2ded5;
+  --bd: #62806a;
+  --ac: #b8e08a;
+  --on: #1e2f22;
+  --c1: #b8e08a;
+  --c2: #7db46a;
+  --c3: #3e8f5e;
+}
+
 body {
-  background-color: blueviolet;
+  background-color: var(--bg);
+}
+
+header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+input {
+  height: 40px;
+  border-radius: 6px;
+  padding: 2px 8px;
+
+  margin: 2px 10px;
+  border: 1px solid var(--bd);
+}
+
+input:focus {
+  outline: none;
+}
+
+.icon {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: start;
+
+  margin: 10px;
+  font-size: 35px;
+  color: var(--ac);
+}
+
+.icon svg {
+  width: 24px;
+  height: 24px;
+  margin: 5px;
+  /* flex-shrink: 0; */
+}
+
+.searchFilter {
+  display: flex;
+  flex-direction: row;
+  margin: 10px;
+}
+
+.searchBar {
+  width: 90%;
+}
+
+.searchFilter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.searchFilter input {
+  flex: 1;
+  height: 40px;
+  padding: 0 12px;
+  background: var(--sf);
+  color: var(--tx);
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+  margin: 10px;
+}
+
+.filterButton {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  background: var(--sf);
+  color: var(--tx);
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 10px;
+  margin-right: 20px;
+}
+.filterButton.open {
+  border-color: var(--ac);
+  color: var(--ac);
+}
+
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  background: var(--ac);
+  color: var(--on);
+  border-radius: 9px;
+  font-size: 11px;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 30px;
+  margin-top: 10px;
+
+  padding: 12px;
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  border-radius: 12px;
+}
+.panel[hidden] {
+  display: none;
+} /* necesario: display:flex pisa al atributo hidden */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.label {
+  font-size: 12px;
+  color: var(--mt);
+}
+.field select {
+  padding: 9px 10px;
+  background: var(--bg);
+  color: var(--tx);
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chip {
+  padding: 5px 11px;
+  background: var(--bg);
+  color: var(--tx);
+  border: 1px solid var(--bd);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.chip[aria-pressed="true"] {
+  background: var(--ac);
+  color: var(--on);
+  border-color: var(--ac);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 8px;
+}
+.btn {
+  padding: 10px;
+  background: var(--ac);
+  color: var(--on);
+  border: 1px solid var(--ac);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.btn.ghost {
+  background: transparent;
+  color: var(--tx);
+  border-color: var(--bd);
+}
+
+.themeButton {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  margin: 20px;
+  margin-right: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.tema {
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  z-index: 1;
+  width: 150px;
+  height: 40px;
+}
+.tema[hidden] {
+  display: none;
+}
+
+.temaWrap {
+  position: relative;
+}
+
+.swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--bg) 50%, var(--ac) 50%);
+  border: 1px solid var(--bd);
+}
+
+.swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1px solid var(--bd);
+  /* usa los colores propios si existen; si no, los del tema activo */
+  background: linear-gradient(
+    135deg,
+    var(--s-bg, var(--bg)) 50%,
+    var(--s-ac, var(--ac)) 50%
+  );
+}
+
+.themeButton.open {
+  border-color: var(--ac);
+}
+
+.temas {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 10;
+  width: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  margin-right: 35px;
+}
+.temas[hidden] {
+  display: none;
+}
+
+.temaOpt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  background: transparent;
+  color: var(--tx);
+  border: none;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.temaOpt:hover,
+.temaOpt[aria-pressed="true"] {
+  background: var(--bg);
+}
+
+.temaName {
+  flex: 1;
+}
+
+.check {
+  width: 16px;
+  height: 16px;
+  color: var(--ac);
+  opacity: 0;
+}
+.temaOpt[aria-pressed="true"] .check {
+  opacity: 1;
+}
+
+.destacadas {
+  margin: 20px 10px;
+}
+
+.destacadas h2 {
+  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--tx);
+}
+
+.rejilla {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  margin: 15px;
+}
+
+.card {
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: center;
+  border-radius: 5px;
+}
+
+.card img {
+  width: 180px;
+  height: 270px;
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+.card h3 {
+  color: var(--tx);
+}
+
+.card p {
+  font-size: 0.9rem;
+  color: var(--tx);
 }
