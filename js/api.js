@@ -1,149 +1,124 @@
-/* const BASE_URL = "http://api.themoviedb.org/3";
-const MAX_PAGES = 500;
-
-const SORT_MAP = {
-  popularity: "popularity.desc",
-  rating: "vote_average.desc",
-  year: "primary_release_date.desc",
-  title: "title.asc",
-};
-
-export class ApiError extends Error {
-  constructor(message, status = 0) {
-    super(message);
-    this.name = "ApiError";
-    this.status = status;
-  }
-}
-
-class TmdbApi {
-  #token;
-  #language;
-
-  constructor(token, language = "es-ES") {
-    if (!token) throw new ApiError("Falta el token de TMDB", 401);
-    this.#token = token;
-    this.#language = language;
-  }
-
-  async #request(path, params = {}, signal) {
-    const clean = Onject.fromEntries(
-      Object.entries(paramas).filter(
-        ([, v]) => v !== undefined && v !== null && v !== null && v !== "",
-      ),
-    );
-
-    const url = new URL(BASE_URL + path);
-    url.search = new URLSearchParams({ language: this.#language, ...clean });
-
-    let res;
-    try {
-      res = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${this.#token}`,
-          accept: "application/json",
-        },
-        signal,
-      });
-    } catch (err) {
-      if (err.name === "AbortError") throw err;
-      throw new ApiError("No hay conexion con el servidor", 0);
-    }
-
-    if (!res.ok) {
-      let detail = "";
-      try {
-        detail = (await res.json()).status_message;
-      } catch {}
-      throw new ApiError(detail || "Error ${res.status", res.status);
-    }
-    return res.json();
-  }
-
-  #toPage(data) {
-    return {
-      results: data.results,
-      page: data.page,
-      totalPages: Math.min(data.total_pages, MAX_PAGES),
-    };
-  }
-
-  async popular(page = 1, signal) {
-    return this.#toPage(
-      await this.#request("/movie/popular", { page }, signal),
-    );
-  }
-}
-
-class ApiError extends Error {}
- */
-
-/* const BASE_URL = "https://api.themoviedb.org/3";
-export class ApiError extends Error {
-  constructor(message, status = 0) {
-    super(message);
-    this.name = "ApiError";
-    this.status = status; // 0 = sin conexión
-  }
-} */
-/* 
-export class TmdbApi {
-  #apiKey;
-  #language;
-
-  constructor(apiKey, language = "es-ES") {
-    if (!apiKey) throw new ApiError("Falta la clave de TMDB", 401);
-    this.#apiKey = apiKey;
-    this.#language = language;
-  }
-
-  async #request(path, params = {}, signal) {
-    const clean = Object.fromEntries(
-      Object.entries(params).filter(
-        ([, v]) => v !== undefined && v !== null && v !== "",
-      ),
-    );
-
-    const url = new URL(BASE_URL + path);
-    url.search = new URLSearchParams({
-      api_key: this.#apiKey,
-      language: this.#language,
-      ...clean,
-    });
-
-    let res;
-    try {
-      res = await fetch(url, { signal });
-    } catch (err) {
-      if (err.name === "AbortError") throw err;
-      throw new ApiError("No hay conexión con el servidor", 0);
-    }
-
-    if (!res.ok) throw new ApiError(`Error ${res.status}`, res.status);
-    return res.json();
-  }
-
-  async checkConnection(signal) {
-    const data = await this.#request("/authentication", {}, signal);
-    return data.success === true;
-  }
-}
-
-
-
- */
-
 import { API_KEY } from "./config.js";
+import { Movie } from "./modelos/movie.js";
+import { Tv } from "./modelos/tv.js";
+import { Person } from "./modelos/person.js";
 
 const BASE_URL = "https://api.themoviedb.org/3";
 
-export async function pedirTMDB(url, extra = "") {
-  const rutaURL = `${BASE_URL}${url}?api_key=${API_KEY}&language=es-ES${extra}`;
-  try {
-    const res = await fetch(rutaURL);
-    if (!res.ok) throw new Error(`Error ${res.status}`);
-    return res.json();
-  } catch (err) {
-    console.err(err.message);
+const SECCIONES = {
+  "peliculas-cartelera": {
+    ruta: "/discover/movie",
+    clase: Movie,
+    params: () => {
+      const hoy = new Date();
+      const inicio = new Date();
+      inicio.setDate(hoy.getDate() - 6);
+      return {
+        region: "ES",
+        with_release_type: "3",
+        sort_by: "popularity.desc",
+      };
+    },
+  },
+  "peliculas-populares": { ruta: "/movie/popular", clase: Movie },
+
+  "peliculas-proximamente": { ruta: "/movie/upcoming", clase: Movie },
+  "peliculas-top": { ruta: "/movie/top_rated", clase: Movie },
+  "series-populares": { ruta: "/tv/popular", clase: Tv },
+  "series-hoy": { ruta: "/tv/airing_today", clase: Tv },
+  "series-top": { ruta: "/tv/top_rated", clase: Tv },
+  "personas-populares": { ruta: "/person/popular", clase: Person },
+  tendencias: { ruta: "/trending/all/week", clase: null }, // mixta
+};
+
+export async function cargarSeccion(clave, pagina = 1) {
+  const { ruta, clase, params = {} } = SECCIONES[clave];
+  const extra = typeof params === "function" ? params() : params;
+  const { results, total_pages } = await pedirTMDB(ruta, {
+    ...extra,
+    page: pagina,
+  });
+  return {
+    pelis: results.map((r) => clase.desdeTMDB(r)),
+    totalPaginas: total_pages,
+  };
+}
+
+function contentDesdeTMDB(item) {
+  switch (item.media_type) {
+    case "movie":
+      return Movie.desdeTMDB(item);
+    case "tv":
+      return Tv.desdeTMDB(item);
+    case "person":
+      return Person.desdeTMDB(item);
+    default:
+      return null;
   }
+}
+
+export async function pedirTMDB(ruta, params = {}) {
+  const url = new URL(`${BASE_URL}${ruta}`);
+  url.search = new URLSearchParams({
+    api_key: API_KEY,
+    language: "es-ES",
+    ...params,
+  }).toString();
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Error ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.error(err.message);
+    throw err;
+  }
+}
+
+export async function buscarTodo(text, pagina = 1) {
+  console.log("buscarTodo");
+  const { results, total_pages } = await pedirTMDB("/search/multi", {
+    query: text,
+    page: pagina,
+  });
+  return {
+    pelis: results.map(contentDesdeTMDB).filter(Boolean),
+    totalPaginas: total_pages,
+  };
+}
+
+export async function buscarPeliculas(text, pagina = 1) {
+  const { results, total_pages } = await pedirTMDB("/search/movie", {
+    query: text,
+    page: pagina,
+  });
+  return {
+    pelis: results.map((json) => Movie.desdeTMDB(json)),
+    totalPaginas: total_pages,
+  };
+}
+
+export async function obtenerPopulares(pagina = 1) {
+  const { results, total_pages } = await pedirTMDB("/movie/popular", {
+    page: pagina,
+  });
+  return {
+    pelis: results.map((json) => Movie.desdeTMDB(json)),
+    totalPaginas: total_pages,
+  };
+}
+
+export async function obtenerDetalles(id) {
+  const [detalle, creditos] = await Promise.all([
+    pedirTMDB(`/movie/${id}`),
+    pedirTMDB(`/movie/${id}/credits`),
+  ]);
+
+  return {
+    peli: Movie.desdeTMDB(detalle),
+    director:
+      creditos.crew.find((p) => p.job === "Director")?.name ?? "Desconocido",
+    reparto: creditos.cast
+      .slice(0, 5)
+      .map(({ name, character }) => `${name} (${character})`),
+  };
 }
