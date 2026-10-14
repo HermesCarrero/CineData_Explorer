@@ -5,6 +5,7 @@ export class Content {
     year,
     nota,
     poster = null,
+    banner,
     generos = [],
     overview,
   }) {
@@ -16,6 +17,7 @@ export class Content {
     this.year = year;
     this.nota = nota;
     this.poster = poster;
+    this.banner = banner;
     this.generos = generos;
     this.overview = overview;
   }
@@ -23,6 +25,10 @@ export class Content {
   get posterUrl() {
     if (!this.poster) return null;
     return `https://image.tmdb.org/t/p/w342${this.poster}`;
+  }
+  get bannerUrl() {
+    if (!this.banner) return null;
+    return `https://image.tmdb.org/t/p/w1280${this.banner}`;
   }
 
   static yearFrom(date) {
@@ -33,11 +39,11 @@ export class Content {
     return genres?.map((g) => g.name) ?? [];
   }
 
-  toCard() {
+  toCard(esFavorita = false) {
     const card = document.createElement("article");
     card.className = "card";
     card.dataset.id = this.id;
-    card.dataset.tipo = this.tipo;
+    card.dataset.tipo = this.mediaType;
 
     if (this.poster) {
       const img = document.createElement("img");
@@ -57,7 +63,18 @@ export class Content {
     const info = document.createElement("p");
     info.textContent = `${this.year} · ⭐ ${this.nota.toFixed(1)}`;
 
-    card.append(titulo, info);
+    const fav = document.createElement("button");
+    fav.className = "btn-fav";
+    fav.textContent = esFavorita ? "*" : "+";
+    fav.title = esFavorita ? "Quitar de favoritas" : "Añadir a favoritos";
+
+    fav.addEventListener("click", () => {
+      card.dispatchEvent(
+        new CustomEvent("favorito", { bubbles: true, detail: this }),
+      );
+    });
+
+    card.append(titulo, info, fav);
     return card;
   }
 }

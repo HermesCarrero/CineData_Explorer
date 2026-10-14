@@ -58,7 +58,7 @@ export class Seccion {
       this.pagina = siguiente;
       this.totalPaginas = totalPaginas;
       pelis.forEach((p) =>
-        this.centinela.before(p.toCard(this.esFavorita(p.id))),
+        this.centinela.before(p.toCard(this.esFavorita(p.id, p.mediaType))),
       );
       ok = true;
     } catch (error) {
@@ -105,7 +105,6 @@ export class Seccion {
       window.addEventListener("pointerup", soltar);
     });
 
-    // Si has arrastrado, el clic que sigue no debe abrir la tarjeta
     this.fila.addEventListener(
       "click",
       (e) => {
@@ -118,7 +117,6 @@ export class Seccion {
       true,
     );
 
-    // Evita que el navegador arrastre la imagen del póster en lugar de la fila
     this.fila.addEventListener("dragstart", (e) => e.preventDefault());
   }
 

@@ -13,6 +13,7 @@ export class Movie extends Content {
     release_date,
     vote_average,
     poster_path,
+    backdrop_path,
     overview,
     runtime,
     genres,
@@ -23,7 +24,8 @@ export class Movie extends Content {
       year: Content.yearFrom(release_date),
       nota: vote_average || 0,
       poster: poster_path ?? null,
-      sinopsis: overview,
+      banner: backdrop_path ?? null,
+      overview,
       duracion: runtime ?? null,
       generos: Content.generosFrom(genres),
     });

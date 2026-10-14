@@ -1,9 +1,10 @@
 import { API_KEY } from "./config.js";
 import { Movie } from "./modelos/movie.js";
-import { Tv } from "./modelos/tv.js";
 import { Person } from "./modelos/person.js";
+import { Tv } from "./modelos/tv.js";
 
 const BASE_URL = "https://api.themoviedb.org/3";
+const IMG = "https://image.tmdb.org/t/p/";
 
 const SECCIONES = {
   "peliculas-cartelera": {
@@ -20,8 +21,17 @@ const SECCIONES = {
       };
     },
   },
+  "series-anime": {
+    ruta: "/discover/tv",
+    clase: Tv,
+    params: {
+      with_genres: "16",
+      with_original_language: "ja",
+      sort_by: "popularity.desc",
+      "vote_count.gte": 50,
+    },
+  },
   "peliculas-populares": { ruta: "/movie/popular", clase: Movie },
-
   "peliculas-proximamente": { ruta: "/movie/upcoming", clase: Movie },
   "peliculas-top": { ruta: "/movie/top_rated", clase: Movie },
   "series-populares": { ruta: "/tv/popular", clase: Tv },
@@ -107,18 +117,49 @@ export async function obtenerPopulares(pagina = 1) {
   };
 }
 
-export async function obtenerDetalles(id) {
-  const [detalle, creditos] = await Promise.all([
-    pedirTMDB(`/movie/${id}`),
-    pedirTMDB(`/movie/${id}/credits`),
-  ]);
+export async function obtenerDetalles(id, tipo = "movie") {
+  const datos = await pedirTMDB(`/${tipo}/${id}`, {
+    append_to_response: "credits,videos",
+    include_video_language: "es,en",
+  });
+
+  const { credits, videos } = datos;
+  const esSerie = tipo === "tv";
+
+  const director = esSerie
+    ? (datos.created_by ?? []).map((p) => p.name)
+    : credits.crew.filter((p) => p.job === "Director").map((p) => p.name);
+
+  const guion = esSerie
+    ? []
+    : [
+        ...new Set(
+          credits.crew
+            .filter((p) => ["Screenplay", "Writer", "Story"].includes(p.job))
+            .map((p) => p.name),
+        ),
+      ].slice(0, 3);
+
+  const trailer = videos.results.find(
+    (v) => v.site === "Youtube" && v.type === "Trailer",
+  );
 
   return {
-    peli: Movie.desdeTMDB(detalle),
-    director:
-      creditos.crew.find((p) => p.job === "Director")?.name ?? "Desconocido",
-    reparto: creditos.cast
-      .slice(0, 5)
-      .map(({ name, character }) => `${name} (${character})`),
+    peli: esSerie ? Tv.desdeTMDB(datos) : Movie.desdeTMDB(datos),
+    eslogan: datos.tagline || "",
+    tituloOriginal: datos.original_title ?? datos.original_name ?? "",
+    votos: datos.vote_count ?? 0,
+    director,
+    guion,
+    reparto: credits.cast.slice(0, 12).map((c) => ({
+      nombre: c.name,
+      personaje: c.character,
+      foto: c.profile_path ? `${IMG}w185${c.profile_path}` : null,
+    })),
+    trailer: trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null,
+    paises: (datos.production_countries ?? []).map((c) => ({
+      codigo: c.iso_3166_1,
+      nombre: c.name,
+    })),
   };
 }

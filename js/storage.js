@@ -1,6 +1,5 @@
 const CLAVE_FAVORITOS = "cinedata:favoritos";
 
-
 function leerJSON(clave, porDefecto) {
   try {
     return JSON.parse(localStorage.getItem(clave)) ?? porDefecto;
@@ -9,9 +8,9 @@ function leerJSON(clave, porDefecto) {
   }
 }
 
-
 export function leerFavoritos() {
-  return leerJSON(CLAVE_FAVORITOS, []).map((obj) => new Pelicula(obj));
+  const lista = leerJSON(CLAVE_FAVORITOS, []);
+  return Array.isArray(lista) ? lista : [];
 }
 
 export function guardarFavoritos(favoritos) {

@@ -1,4 +1,5 @@
-// ── Helpers ──
+import { DEFAULT_FILTROS, contarActivos } from "./filtros.js";
+
 function el(tag, { clase, texto, attrs = {} } = {}, ...hijos) {
   const nodo = document.createElement(tag);
   if (clase) nodo.className = clase;
@@ -15,30 +16,33 @@ function crearSelect(id, opciones) {
 }
 
 function crearCampo(etiqueta, control) {
-  return el("label", { clase: "field" }, el("span", { clase: "label", texto: etiqueta }), control);
+  return el(
+    "label",
+    { clase: "field" },
+    el("span", { clase: "label", texto: etiqueta }),
+    control,
+  );
 }
 
-// ── Datos del panel ──
-const GENEROS = [
-  ["", "Todos"],
-  ["18", "Drama"],
-  ["28", "Acción"],
-  ["35", "Comedia"],
-  ["27", "Terror"],
+const TIPOS = [
+  ["todos", "Todo"],
+  ["movie", "Películas"],
+  ["tv", "Series"],
+  ["person", "Personas"],
 ];
 
-const RATINGS = [
-  ["0", "Todos"],
+const NOTAS = [
+  ["0", "Todas"],
   ["5", "5+"],
   ["7", "7+"],
-  ["9", "9+"],
+  ["8", "8+"],
 ];
 
 const ORDENES = [
-  ["popularity", "Popularidad"],
-  ["rating", "Rating"],
-  ["year", "Año"],
-  ["title", "Título"],
+  ["relevancia", "Relevancia"],
+  ["nota", "Nota"],
+  ["anio", "Año"],
+  ["titulo", "Título"],
 ];
 
 function opcionesAños() {
@@ -48,47 +52,58 @@ function opcionesAños() {
   return lista;
 }
 
-// ── Panel de filtros ──
 function crearPanelFiltros() {
   const panel = el("section", { clase: "panel", attrs: { id: "filterPanel" } });
   panel.hidden = true;
 
-  // Género (chips)
-  const chips = el("div", { clase: "chips", attrs: { id: "genreChips" } });
-  GENEROS.forEach(([id, nombre], i) => {
+  const chips = el("div", { clase: "chips", attrs: { id: "tipoChips" } });
+  TIPOS.forEach(([valor, texto], i) => {
     chips.append(
       el("button", {
         clase: "chip",
-        texto: nombre,
-        attrs: { type: "button", "data-genre": id, "aria-pressed": String(i === 0) },
-      })
+        texto,
+        attrs: {
+          type: "button",
+          "data-tipo": valor,
+          "aria-pressed": String(i === 0),
+        },
+      }),
     );
   });
-  const campoGenero = el("div", { clase: "field" },
-    el("span", { clase: "label", texto: "Género" }),
-    chips
+
+  const campoTipo = el(
+    "div",
+    { clase: "field" },
+    el("span", { clase: "label", texto: "Tipo" }),
+    chips,
+  );
+  const campoNota = crearCampo("Nota mínima", crearSelect("notaSelect", NOTAS));
+  const campoOrden = crearCampo(
+    "Ordenar por",
+    crearSelect("sortSelect", ORDENES),
   );
 
-  // Selects
-  const campoAño = crearCampo("Año", crearSelect("yearSelect", opcionesAños()));
-  const campoRating = crearCampo("Rating mínimo", crearSelect("ratingSelect", RATINGS));
-  const campoOrden = crearCampo("Ordenar por", crearSelect("sortSelect", ORDENES));
-
-  // Acciones
-  const acciones = el("div", { clase: "actions" },
-    el("button", { clase: "btn ghost", texto: "Limpiar", attrs: { type: "button", id: "clearBtn" } }),
-    el("button", { clase: "btn", texto: "Ver resultados", attrs: { type: "button", id: "closeBtn" } })
+  const acciones = el(
+    "div",
+    { clase: "actions" },
+    el("button", {
+      clase: "btn ghost",
+      texto: "Limpiar",
+      attrs: { type: "button", id: "clearBtn" },
+    }),
+    el("button", {
+      clase: "btn",
+      texto: "Listo",
+      attrs: { type: "button", id: "closeBtn" },
+    }),
   );
 
-  panel.append(campoGenero, campoAño, campoRating, campoOrden, acciones);
+  panel.append(campoTipo, campoNota, campoOrden, acciones);
   return panel;
 }
 
-// ── Montaje: justo debajo del header ──
-// Tiene que ocurrir ANTES de leer los elementos con getElementById
 const filterPanel = crearPanelFiltros();
 document.querySelector("header").after(filterPanel);
-
 
 const filterBtn = document.getElementById("filterBtn");
 // const filterPanel = document.getElementById("filterPanel");
@@ -96,9 +111,6 @@ const themeBtn = document.getElementById("themeBtn");
 const temasPanel = document.getElementById("temasPanel");
 const temas = ["claro", "oscuro", "cine", "bosque"];
 const themeOpts = temasPanel.querySelectorAll(".temaOpt");
-
-
-
 
 function toggleThemes(open) {
   temasPanel.hidden = !open;
@@ -122,6 +134,63 @@ function setTheme(name) {
     localStorage.setItem("theme", name);
   } catch {}
 }
+
+// ── Filtros ──
+const tipoChips = document.getElementById("tipoChips");
+const notaSelect = document.getElementById("notaSelect");
+const sortSelect = document.getElementById("sortSelect");
+
+let filtros = { ...DEFAULT_FILTROS };
+
+// Contador sobre el botón de filtros
+const filtroBadge = document.createElement("span");
+filtroBadge.className = "badge";
+filtroBadge.hidden = true;
+filterBtn.append(filtroBadge);
+
+function emitirFiltros() {
+  const n = contarActivos(filtros);
+  filtroBadge.textContent = n;
+  filtroBadge.hidden = n === 0;
+  document.dispatchEvent(
+    new CustomEvent("filtros", { detail: { ...filtros } }),
+  );
+}
+
+tipoChips.addEventListener("click", (e) => {
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  tipoChips
+    .querySelectorAll(".chip")
+    .forEach((c) => c.setAttribute("aria-pressed", String(c === chip)));
+  filtros.tipo = chip.dataset.tipo;
+  emitirFiltros();
+});
+
+notaSelect.addEventListener("change", (e) => {
+  filtros.notaMin = Number(e.target.value);
+  emitirFiltros();
+});
+
+sortSelect.addEventListener("change", (e) => {
+  filtros.orden = e.target.value;
+  emitirFiltros();
+});
+
+document.getElementById("clearBtn").addEventListener("click", () => {
+  filtros = { ...DEFAULT_FILTROS };
+  tipoChips
+    .querySelectorAll(".chip")
+    .forEach((c, i) => c.setAttribute("aria-pressed", String(i === 0)));
+  notaSelect.value = "0";
+  sortSelect.value = "relevancia";
+  emitirFiltros();
+});
+
+document
+  .getElementById("closeBtn")
+  .addEventListener("click", () => togglePanel(false));
+document.addEventListener("cerrar-filtros", () => togglePanel(false));
 
 temasPanel.addEventListener("click", (e) => {
   const opt = e.target.closest(".temaOpt");
